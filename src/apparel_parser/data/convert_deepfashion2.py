@@ -2,16 +2,12 @@ import json
 import os
 from pathlib import Path
 from PIL import Image
+from shapely.geometry import Polygon
 
 from apparel_parser.common.constants import CATEGORY_ID_TO_TARGET_INDEX
 
 
 def annotation_to_yolo_lines(data: dict, img_w: int, img_h: int) -> list:
-    """
-    核心转换逻辑（纯函数，不涉及文件读写，方便单元测试）。
-    输入：一张图的原始标注数据（dict）+ 图片宽高
-    输出：YOLO-seg格式的标注行列表，每行格式为 "class_id x1 y1 x2 y2 ..."（坐标已归一化到0-1）
-    """
     lines = []
     for key, item in data.items():
         if not key.startswith("item"):
@@ -28,11 +24,17 @@ def annotation_to_yolo_lines(data: dict, img_w: int, img_h: int) -> list:
                 continue
 
             normalized = []
+            points = []
             for i in range(0, len(polygon), 2):
                 x = min(max(polygon[i] / img_w, 0.0), 1.0)
                 y = min(max(polygon[i + 1] / img_h, 0.0), 1.0)
                 normalized.append(f"{x:.6f}")
                 normalized.append(f"{y:.6f}")
+                points.append((x, y))
+
+            # 跳过自相交/无效的多边形，避免污染分割掩码的训练信号
+            if not Polygon(points).is_valid:
+                continue
 
             lines.append(f"{target_class} " + " ".join(normalized))
 

@@ -1,0 +1,13 @@
+path: /root/autodl-tmp/project/yolo_dataset
+train: images/train
+val: images/val
+
+names:
+  0: 上衣
+  1: 外套
+  2: 裤子
+  3: 裙子
+  4: 连衣裙
+  5: 鞋子
+  6: 包包
+  7: 配饰

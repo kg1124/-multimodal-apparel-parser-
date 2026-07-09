@@ -16,31 +16,49 @@ DEEPFASHION2_CATEGORIES = {
 }
 
 # PRD要求的8大类，YOLO训练用的类别索引（0开始）
-# 注意：鞋子、包包、配饰这3类 DeepFashion2 不包含，暂不训练，后续用 Fashionpedia 数据补充
 TARGET_CLASSES = {
     0: "上衣",
     1: "外套",
     2: "裤子",
     3: "裙子",
     4: "连衣裙",
-    # 5: "鞋子",   # 缺数据，待补充
-    # 6: "包包",   # 缺数据，待补充
-    # 7: "配饰",   # 缺数据，待补充
+    5: "鞋子",
+    6: "包包",
+    7: "配饰",
 }
 
 # DeepFashion2 的 category_id -> 目标类别索引 的映射表
 CATEGORY_ID_TO_TARGET_INDEX = {
-    1: 0,   # short_sleeve_top -> 上衣
-    2: 0,   # long_sleeve_top  -> 上衣
-    5: 0,   # vest             -> 上衣
-    6: 0,   # sling            -> 上衣
-    3: 1,   # short_sleeve_outwear -> 外套
-    4: 1,   # long_sleeve_outwear  -> 外套
-    7: 2,   # shorts    -> 裤子
-    8: 2,   # trousers  -> 裤子
-    9: 3,   # skirt     -> 裙子
-    10: 4,  # short_sleeve_dress -> 连衣裙
-    11: 4,  # long_sleeve_dress  -> 连衣裙
-    12: 4,  # vest_dress         -> 连衣裙
-    13: 4,  # sling_dress        -> 连衣裙
+    1: 0,
+    2: 0,
+    5: 0,
+    6: 0,
+    3: 1,
+    4: 1,
+    7: 2,
+    8: 2,
+    9: 3,
+    10: 4,
+    11: 4,
+    12: 4,
+    13: 4,
+}
+
+# Fashionpedia 类别名称 -> 目标类别索引 的映射表
+# 按名称匹配（不写死数字id），因为具体id要从下载的json里的categories列表动态读取
+FASHIONPEDIA_NAME_TO_TARGET_INDEX = {
+    "shoe": 5,
+    "bag, wallet": 6,
+    "glasses": 7,
+    "hat": 7,
+    "headband, head covering, hair accessory": 7,
+    "tie": 7,
+    "glove": 7,
+    "watch": 7,
+    "belt": 7,
+    "leg warmer": 7,
+    "tights, stockings": 7,
+    "sock": 7,
+    "scarf": 7,
+    "umbrella": 7,
 }
