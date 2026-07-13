@@ -3,6 +3,8 @@ import os
 from collections import defaultdict
 from pathlib import Path
 
+import cv2
+import numpy as np
 from shapely.geometry import Polygon
 
 from apparel_parser.common.constants import FASHIONPEDIA_NAME_TO_TARGET_INDEX
@@ -10,35 +12,45 @@ from apparel_parser.common.constants import FASHIONPEDIA_NAME_TO_TARGET_INDEX
 
 def segmentation_to_yolo_lines(segmentation, target_class: int, img_w: int, img_h: int) -> list:
     """
-    核心转换逻辑（纯函数，方便单元测试）。
-    segmentation 是COCO polygon格式：list of [x1,y1,x2,y2,...]
-    自相交/无效的多边形会被跳过，不写入结果。
+    同一个实例的所有多边形组件合并成尽量少的YOLO-seg行（原理同DeepFashion2那边）。
     """
-    lines = []
     if not isinstance(segmentation, list):
-        return lines  # RLE等其他格式暂不支持，先跳过
+        return []  # RLE等其他格式暂不支持
 
+    mask = np.zeros((img_h, img_w), dtype=np.uint8)
+    valid_any = False
     for polygon in segmentation:
         if len(polygon) < 6:
             continue
+        pts = np.array(polygon, dtype=np.float64).reshape(-1, 2)
+        pts[:, 0] = np.clip(pts[:, 0], 0, img_w - 1)
+        pts[:, 1] = np.clip(pts[:, 1], 0, img_h - 1)
+        cv2.fillPoly(mask, [pts.astype(np.int32)], 1)
+        valid_any = True
+
+    if not valid_any:
+        return []
+
+    contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    lines = []
+    for cnt in contours:
+        if len(cnt) < 3 or cv2.contourArea(cnt) < 4:
+            continue
         normalized = []
-        points = []
-        for i in range(0, len(polygon), 2):
-            x = min(max(polygon[i] / img_w, 0.0), 1.0)
-            y = min(max(polygon[i + 1] / img_h, 0.0), 1.0)
+        pts = []
+        for point in cnt.reshape(-1, 2):
+            x = min(max(point[0] / img_w, 0.0), 1.0)
+            y = min(max(point[1] / img_h, 0.0), 1.0)
             normalized.append(f"{x:.6f}")
             normalized.append(f"{y:.6f}")
-            points.append((x, y))
-
-        if not Polygon(points).is_valid:
+            pts.append((x, y))
+        if not Polygon(pts).is_valid:
             continue
-
         lines.append(f"{target_class} " + " ".join(normalized))
     return lines
 
 
 def build_category_mapping(categories: list) -> dict:
-    """根据json里的categories列表(id+name)，动态生成 category_id -> 目标类别索引 的映射"""
     mapping = {}
     for cat in categories:
         name = cat["name"]
